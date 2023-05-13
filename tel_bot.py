@@ -1,7 +1,9 @@
+import json
 import logging
 import os
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, executor, types
+import requests
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -64,9 +66,27 @@ async def take_message_info(message: types.Message):
 async def my_message_handler(message: types.Message, text, chat_id, message_id):
     message.message_id = message_id
     message.chat.id = chat_id
-    message.text = text
-    await message.answer(text)
+    text = requests.get('http://127.0.0.1:8000/services')
+    my = text.json()
+    message.text = my['services']['services'][1]
+    a = message.text
+    await message.answer(a)
 
 
+# @dp.message_handler(commands=['service'])
+# @dp.message_handler(take_message_info)
+# async def service_handler(message: types.Message, message_id, chat_id):
+#     message.message_id = message_id
+#     message.chat.id = chat_id
+#     service = message.text.split(' ')[1]
+#     response = requests.get('http://127.0.0.1:8000/services')
+#     my = response.json()
+#     await message.answer(text=my['services']['services'][service])
+
+
+response = requests.get('http://127.0.0.1:8000/services')
+my = response.json()
+print(my['services']['services'][1])
 if __name__ == '__main__':
     executor.start_polling(dp)
+
