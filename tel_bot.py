@@ -66,19 +66,9 @@ async def get_data():
 async def services_handler(message: types.Message):
     services_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
     our = await get_data()
-    # services = []
-    # response = requests.get('http://127.0.0.1:8000/services')
-    # g = response.json()
-    # all_services = g['services']['services']
     for k, v in our.items():
         for i in v.keys():
-            # services.append({'name': i['name'], 'id': i['id']})
             services_keyboard.insert(i)
-    # text = requests.get('http://127.0.0.1:8000/services')
-    # my = text.json()
-    # all_services = my['services']['services']
-    # for i in all_services:
-    #     services_keyboard.insert(i['name'])
     services_keyboard.add('/cancel')
     await Form.service.set()
     await message.answer('Choose your service!', reply_markup=services_keyboard)
@@ -110,7 +100,12 @@ async def process_name(message: types.Message, state: FSMContext):
 
     response = requests.get('http://127.0.0.1:8000/services')
     g = response.json()
-    all_services = g['services']['services'][number]['params']['required'][0]['name']
+    list_of_params = []
+    count = 0
+    for i in g['services']['services'][number]['params']['required']:
+        print(i)
+        list_of_params.append(i['name'])
+        count += 1
     if message.text not in g['services']['services'][number]['name']:
         return await message.answer("Service not found")
     else:
@@ -118,7 +113,7 @@ async def process_name(message: types.Message, state: FSMContext):
             data['service'] = message.text
         markup = types.ReplyKeyboardMarkup().insert(types.KeyboardButton('/cancel'))
         await Form.next()
-        await message.answer(f"Your question: {all_services}", reply_markup=markup)
+        await message.answer(f"Your question: {list_of_params}", reply_markup=markup)
 
 
 @dp.message_handler(state=Form.text)
@@ -126,10 +121,13 @@ async def process_gender(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['text'] = message.text
         our = await get_data()
-        my_id = our[data['service']]
+        for k, v in our.items():
+            for i, b in v.items():
+                if i == data['service']:
+                    my_id = b
         markup = types.ReplyKeyboardRemove()
         info = requests.get(f'http://127.0.0.1:8000/services/{my_id}?text={data["text"]}')
-        a = info.json()
+        # a = info.json()
         # final = a['service']['messages'][0]['text']
         await message.answer(f"{data['service']}", reply_markup=markup)
     await state.finish()
@@ -156,35 +154,35 @@ async def send_welcome(message: types.Message):
 #     await message.answer(message.text)
 
 
-async def take_message_info(message: types.Message):
-    message_id = message.message_id
-    chat_id = message.chat.id
-    text = message.text
-    services = {}
-    service = requests.get('http://127.0.0.1:8000/services')
-    my = service.json()
-    all_services = my['services']['services']
-    for i in all_services:
-        services.update({i['name']: i['id']})
-    question = ''
-    try:
-        info = requests.get(f'http://127.0.0.1:8000/services/{services[text]}?text={question}')
-        a = info.json()
-        final = a['service']['messages'][0]['text']
-        return {'message_id': message_id, 'chat_id': chat_id, 'text': text, 'final': final}
-    except KeyError:
-        return {'message_id': message_id, 'chat_id': chat_id, 'text': text, 'final': final}
+# async def take_message_info(message: types.Message):
+#     message_id = message.message_id
+#     chat_id = message.chat.id
+#     text = message.text
+#     services = {}
+#     service = requests.get('http://127.0.0.1:8000/services')
+#     my = service.json()
+#     all_services = my['services']['services']
+#     for i in all_services:
+#         services.update({i['name']: i['id']})
+#     question = ''
+#     try:
+#         info = requests.get(f'http://127.0.0.1:8000/services/{services[text]}?text={question}')
+#         a = info.json()
+#         final = a['service']['messages'][0]['text']
+#         return {'message_id': message_id, 'chat_id': chat_id, 'text': text, 'final': final}
+#     except KeyError:
+#         return {'message_id': message_id, 'chat_id': chat_id, 'text': text, 'final': final}
 
 
-@dp.message_handler(take_message_info)
-async def my_message_handler(message: types.Message, text, final):
-    print(text)
-    print(final)
-    if text != final:
-        message.text = final
-    elif text == final:
-        message.text = 'There is not this service'
-    await message.answer(message.text)
+# @dp.message_handler(take_message_info)
+# async def my_message_handler(message: types.Message, text, final):
+#     print(text)
+#     print(final)
+#     if text != final:
+#         message.text = final
+#     elif text == final:
+#         message.text = 'There is not this service'
+#     await message.answer(message.text)
 
 
 if __name__ == '__main__':
